@@ -1,795 +1,569 @@
-<!doctype html>
-<html lang="es">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Entrega Contratistas</title>
-
-  <style>
-    :root{
-      --bg:#f6f7fb; --panel:#ffffff; --panel2:#fbfcff;
-      --border: rgba(15, 23, 42, .10);
-      --text:#0f172a; --muted:#64748b;
-      --accent:#2563eb; --accent2:#7c3aed;
-      --danger:#e11d48; --ok:#059669;
-      --shadow: 0 12px 30px rgba(15, 23, 42, .08);
-      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-    }
-    *{box-sizing:border-box}
-    body{
-      margin:0; font-family:var(--sans); color:var(--text);
-      background:
-        radial-gradient(900px 520px at 20% 0%, rgba(124, 58, 237, .10), transparent 60%),
-        radial-gradient(900px 520px at 90% 10%, rgba(37, 99, 235, .10), transparent 55%),
-        linear-gradient(180deg, #ffffff 0%, var(--bg) 100%);
-      min-height:100vh;
-    }
-    .wrap{max-width:1100px; margin:0 auto; padding:18px;}
-    .top{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; padding:14px 14px 6px;}
-    .brand{display:flex; flex-direction:column; gap:4px;}
-    .brand h1{margin:0; font-size:16px; letter-spacing:.2px}
-    .brand p{margin:0; font-size:12px; color:var(--muted)}
-    .actions{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
-
-    .btn{
-      border:1px solid var(--border);
-      background: var(--panel);
-      color: var(--text);
-      padding: 10px 12px;
-      border-radius: 14px;
-      cursor:pointer;
-      font-weight:650;
-      font-size:13px;
-      letter-spacing:.2px;
-      box-shadow: 0 6px 16px rgba(15,23,42,.06);
-      user-select:none;
-    }
-    .btn.primary{
-      border:none; color:#fff;
-      background: linear-gradient(90deg, rgba(37, 99, 235, .95), rgba(124, 58, 237, .95));
-      box-shadow: 0 10px 22px rgba(37, 99, 235, .18);
-    }
-    .btn.danger{
-      background: rgba(225, 29, 72, .08);
-      border-color: rgba(225, 29, 72, .22);
-      color: #be123c;
-      box-shadow:none;
-    }
-    .btn.ok{
-      background: rgba(5, 150, 105, .08);
-      border-color: rgba(5, 150, 105, .22);
-      color: #047857;
-      box-shadow:none;
-    }
-    .btn:disabled{opacity:.55; cursor:not-allowed}
-
-    input, select{
-      width:100%;
-      padding: 11px 12px;
-      border-radius: 14px;
-      border:1px solid var(--border);
-      background: var(--panel);
-      color: var(--text);
-      outline:none;
-      font-size:13px;
-      box-shadow: 0 6px 16px rgba(15,23,42,.04);
-    }
-    input::placeholder{color: rgba(100,116,139,.70)}
-
-    .grid{display:grid; grid-template-columns: 1fr 1.05fr; gap:14px; margin-top:10px;}
-    @media (max-width: 960px){ .grid{grid-template-columns:1fr} }
-
-    .card{background: var(--panel); border:1px solid var(--border); border-radius: 22px; box-shadow: var(--shadow); padding: 14px;}
-    .cardhead{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:10px;}
-    .cardhead h2{margin:0; font-size:13px; color: var(--text); letter-spacing:.2px}
-    .meta{font-size:12px; color:var(--muted); font-family:var(--mono)}
-    label{display:block; font-size:12px; color:var(--muted); margin: 10px 0 6px}
-
-    .results{margin-top:10px; border:1px solid var(--border); border-radius: 16px; overflow:hidden; background: var(--panel2);}
-    .list{max-height: 360px; overflow:auto}
-    .rowitem{
-      display:flex; align-items:center; justify-content:space-between; gap:10px;
-      padding: 10px 12px; border-top: 1px solid var(--border); background: var(--panel);
-    }
-    .rowitem:first-child{border-top:none}
-    .rowitem:hover{background: rgba(37,99,235,.04)}
-    .who{min-width:0}
-    .who strong{display:block; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-    .who span{display:block; font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px;}
-    .mono{font-family:var(--mono); font-size:12px; color:var(--muted); white-space:nowrap}
-
-    .pill{
-      display:flex; gap:8px; flex-wrap:wrap;
-      padding:10px 12px; border:1px solid var(--border); border-radius: 16px;
-      background: var(--panel2); margin-top:8px; align-items:center;
-      font-size:12px; color:var(--muted);
-    }
-    .chip{
-      padding:4px 8px; border-radius:999px; border:1px solid var(--border);
-      background: #fff; color:var(--muted); font-family:var(--mono); font-size:11px;
-    }
-    .pill b{color:var(--text)}
-
-    .sigwrap{
-      margin-top:10px;
-      border: 1px dashed rgba(15,23,42,.18);
-      border-radius: 18px;
-      padding: 10px;
-      background: var(--panel2);
-    }
-    canvas{
-      width:100%; height: 210px;
-      background: #ffffff;
-      border-radius: 14px;
-      display:block;
-      touch-action:none;
-      border: 1px solid rgba(15,23,42,.08);
-    }
-    .sigbar{
-      display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;
-      margin-top:10px;
-    }
-    .hint{font-size:12px; color:var(--muted)}
-    .toast{
-      margin-top:10px;
-      padding:10px 12px;
-      border:1px solid var(--border);
-      border-radius: 16px;
-      background: var(--panel2);
-      color: var(--muted);
-      font-size: 12px;
-      display:none;
-      white-space:pre-line;
-    }
-
-    table{
-      width:100%;
-      border-collapse: collapse;
-      border:1px solid var(--border);
-      border-radius:16px;
-      overflow:hidden;
-      margin-top:10px;
-      background: var(--panel);
-    }
-    th, td{
-      padding:10px;
-      border-top:1px solid var(--border);
-      font-size:12px;
-      text-align:left;
-      vertical-align:top;
-    }
-    th{background: var(--panel2); color:var(--muted); font-weight:650}
-    .tablewrap{max-height: 360px; overflow:auto; border-radius:16px}
-  </style>
-</head>
-
-<body>
-  <div class="wrap">
-    <div class="top">
-      <div class="brand">
-        <h1>Entrega Contratistas</h1>
-        <p>Pendientes se ocultan automáticamente al marcar “Entregado”.</p>
-      </div>
-
-      <div class="actions">
-        <button class="btn ok" id="btnExportPdfList">PDF Entregados (Lista)</button>
-        <button class="btn danger" id="btnReload">Recargar</button>
-      </div>
-    </div>
-
-    <div class="grid">
-      <!-- Pendientes -->
-      <section class="card">
-        <div class="cardhead">
-          <h2>Pendientes</h2>
-          <div class="meta" id="peopleMeta">0</div>
-        </div>
-
-        <label>Buscar (DNI / nombre / apellido / empresa / RUC)</label>
-        <input id="q" placeholder="Ej: 7345... / Pérez / Empresa / 20..." />
-
-        <div style="display:grid; grid-template-columns: 1fr 160px; gap:10px; margin-top:10px;">
-          <select id="empresaFilter">
-            <option value="">Todas las empresas</option>
-          </select>
-          <select id="limit">
-            <option value="15">15</option>
-            <option value="25" selected>25</option>
-            <option value="50">50</option>
-          </select>
-        </div>
-
-        <div class="results" style="margin-top:12px;">
-          <div class="list" id="results"></div>
-        </div>
-
-        <div class="toast" id="toast"></div>
-
-        <div class="hint" style="margin-top:10px;">
-          Fuente: RTDB /Personal · Estado: RTDB /Entregas · Firma: Storage (JPG comprimido)
-        </div>
-      </section>
-
-      <!-- Registrar + Historial -->
-      <section class="card">
-        <div class="cardhead">
-          <h2>Registrar entrega</h2>
-          <div class="meta" id="delMeta">0 entregas</div>
-        </div>
-
-        <div id="selectedPill" class="pill" style="display:none"></div>
-        <div class="hint" id="selectedHint">Selecciona una persona.</div>
-
-        <label style="margin-top:12px;">Ítem entregado</label>
-        <input id="item" placeholder="Ej: Kit / Uniforme / Vale" disabled />
-
-        <label>Firma</label>
-        <div class="sigwrap">
-          <canvas id="sig" width="1200" height="600" aria-label="Firma"></canvas>
-          <div class="sigbar">
-            <div class="hint">Firma con mouse o dedo.</div>
-            <div style="display:flex; gap:10px; flex-wrap:wrap;">
-              <button class="btn" id="btnClearSig">Limpiar</button>
-              <button class="btn primary" id="btnSave" disabled>Marcar Entregado</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="tablewrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Fecha</th>
-                <th>DNI</th>
-                <th>Nombre</th>
-                <th>Empresa</th>
-                <th>Ítem</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody id="hist"></tbody>
-          </table>
-        </div>
-      </section>
-    </div>
-  </div>
-
-  <!-- jsPDF -->
-  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-
-  <!-- Firebase -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
-    import { getDatabase, ref, onValue, set, remove } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
-    import { getStorage, ref as sRef, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js";
-
-    // --- TU CONFIG (storageBucket CORREGIDO) ---
-    const firebaseConfig = {
-      apiKey: "AIzaSyD_kLxpXSw_1V-BbaWxxYgfKwgqEGPAQ0k",
-      authDomain: "entrega-contratistas.firebaseapp.com",
-      databaseURL: "https://entrega-contratistas-default-rtdb.firebaseio.com",
-      projectId: "entrega-contratistas",
-      storageBucket: "entrega-contratistas.appspot.com",
-      messagingSenderId: "225687645195",
-      appId: "1:225687645195:web:6702c2c1c4b5378d2f2b0e"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-    const storage = getStorage(app);
-
-    // --- UI refs ---
-    const peopleMeta = document.getElementById('peopleMeta');
-    const delMeta = document.getElementById('delMeta');
-    const q = document.getElementById('q');
-    const empresaFilter = document.getElementById('empresaFilter');
-    const limitSel = document.getElementById('limit');
-    const results = document.getElementById('results');
-    const toast = document.getElementById('toast');
-
-    const selectedPill = document.getElementById('selectedPill');
-    const selectedHint = document.getElementById('selectedHint');
-    const item = document.getElementById('item');
-    const btnSave = document.getElementById('btnSave');
-    const btnClearSig = document.getElementById('btnClearSig');
-    const hist = document.getElementById('hist');
-    const btnReload = document.getElementById('btnReload');
-    const btnExportPdfList = document.getElementById('btnExportPdfList');
-
-    const canvas = document.getElementById('sig');
-    const ctx = canvas.getContext('2d');
-
-    // --- Helpers ---
-    const norm = (s) => (s ?? "").toString().trim().toLowerCase();
-    function showToast(msg, ms=2600){
-      toast.textContent = msg;
-      toast.style.display = 'block';
-      clearTimeout(showToast._t);
-      showToast._t = setTimeout(() => toast.style.display = 'none', ms);
-    }
-    function escapeHtml(s){
-      return (s ?? "").toString()
-        .replaceAll("&","&amp;")
-        .replaceAll("<","&lt;")
-        .replaceAll(">","&gt;")
-        .replaceAll('"',"&quot;");
-    }
-    function formatLocal(iso){
-      const d = new Date(iso);
-      return d.toLocaleString();
-    }
-
-    // --- Canvas drawing ---
-    function resetCanvas(){
-      ctx.setTransform(1,0,0,1,0,0);
-      ctx.clearRect(0,0,canvas.width,canvas.height);
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0,0,canvas.width,canvas.height);
-      ctx.strokeStyle = "#0f172a";
-      ctx.lineWidth = 5;
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-    }
-    resetCanvas();
-
-    let drawing=false, last=null;
-    function pos(evt){
-      const rect = canvas.getBoundingClientRect();
-      const clientX = (evt.touches && evt.touches[0]) ? evt.touches[0].clientX : evt.clientX;
-      const clientY = (evt.touches && evt.touches[0]) ? evt.touches[0].clientY : evt.clientY;
-      return {
-        x:(clientX-rect.left)*(canvas.width/rect.width),
-        y:(clientY-rect.top)*(canvas.height/rect.height)
-      };
-    }
-    function start(evt){ evt.preventDefault(); drawing=true; last=pos(evt); }
-    function move(evt){
-      if(!drawing) return;
-      evt.preventDefault();
-      const p = pos(evt);
-      ctx.beginPath(); ctx.moveTo(last.x,last.y); ctx.lineTo(p.x,p.y); ctx.stroke();
-      last=p;
-    }
-    function end(evt){ if(!drawing) return; evt.preventDefault(); drawing=false; last=null; }
-
-    canvas.addEventListener('mousedown', start);
-    canvas.addEventListener('mousemove', move);
-    window.addEventListener('mouseup', end);
-
-    canvas.addEventListener('touchstart', start, {passive:false});
-    canvas.addEventListener('touchmove', move, {passive:false});
-    canvas.addEventListener('touchend', end, {passive:false});
-
-    function isCanvasBlank(){
-      const img = ctx.getImageData(0,0,canvas.width,canvas.height).data;
-      for(let i=0;i<img.length;i+=4){
-        if(img[i]!==255 || img[i+1]!==255 || img[i+2]!==255 || img[i+3]!==255) return false;
-      }
-      return true;
-    }
-
-    btnClearSig.addEventListener('click', () => { resetCanvas(); showToast("Firma limpia."); });
-
-    // --- Compress signature for speed (JPG) ---
-    async function compressSignatureDataUrl(srcDataUrl, maxW=800, quality=0.75){
-      const img = await new Promise((res, rej) => {
-        const i = new Image();
-        i.onload = () => res(i);
-        i.onerror = rej;
-        i.src = srcDataUrl;
-      });
-      const scale = Math.min(1, maxW / img.naturalWidth);
-      const w = Math.round(img.naturalWidth * scale);
-      const h = Math.round(img.naturalHeight * scale);
-
-      const c = document.createElement("canvas");
-      c.width = w; c.height = h;
-      const cx = c.getContext("2d");
-      cx.fillStyle = "#fff";
-      cx.fillRect(0,0,w,h);
-      cx.drawImage(img, 0,0,w,h);
-
-      return c.toDataURL("image/jpeg", quality);
-    }
-
-    // --- Firebase live data ---
-    let people = [];            // from /Personal
-    let deliveriesMap = {};     // from /Entregas
-    let selected = null;
-
-    function normalizePerson(dni, obj){
-      return {
-        dni: (dni ?? "").toString().trim(),
-        primer_nombre: (obj?.PRIMER_NOMBRE ?? obj?.primer_nombre ?? "").toString().trim(),
-        primer_apellido: (obj?.PRIMER_APELLIDO ?? obj?.primer_apellido ?? "").toString().trim(),
-        empresa: (obj?.EMPRESA ?? obj?.empresa ?? "").toString().trim(),
-        ruc: (obj?.RUC ?? obj?.ruc ?? "").toString().trim()
-      };
-    }
-
-    function refreshEmpresaFilter(){
-      const setEmp = new Set(people.map(p => p.empresa).filter(Boolean));
-      const arr = Array.from(setEmp).sort((a,b)=>a.localeCompare(b));
-      empresaFilter.innerHTML = `<option value="">Todas las empresas</option>` +
-        arr.map(e => `<option value="${escapeHtml(e)}">${escapeHtml(e)}</option>`).join('');
-    }
-
-    function isDelivered(dni){
-      return !!deliveriesMap?.[dni]?.entregado;
-    }
-
-    function refreshMeta(){
-      const pendientes = people.filter(p => !isDelivered(p.dni)).length;
-      peopleMeta.textContent = `${pendientes} pendientes`;
-      delMeta.textContent = `${Object.keys(deliveriesMap || {}).length} entregas`;
-    }
-
-    function searchPeople(){
-      const qq = norm(q.value);
-      const emp = empresaFilter.value;
-      const limit = parseInt(limitSel.value, 10);
-
-      let arr = people.filter(p => !isDelivered(p.dni));
-      if(emp) arr = arr.filter(p => p.empresa === emp);
-
-      if(qq){
-        arr = arr.filter(p => {
-          const hay = `${p.dni} ${p.primer_nombre} ${p.primer_apellido} ${p.empresa} ${p.ruc}`.toLowerCase();
-          return hay.includes(qq);
-        });
-      }
-
-      arr = arr.slice(0, limit);
-
-      results.innerHTML = arr.map((p, idx) => {
-        const full = `${p.primer_nombre} ${p.primer_apellido}`.trim();
-        return `
-          <div class="rowitem">
-            <div class="who">
-              <strong>${escapeHtml(full || "(sin nombre)")}</strong>
-              <span>${escapeHtml(p.empresa || "(sin empresa)")} · RUC ${escapeHtml(p.ruc || "-")}</span>
-            </div>
-            <div style="display:flex; gap:10px; align-items:center">
-              <span class="mono">${escapeHtml(p.dni)}</span>
-              <button class="btn ok" data-pick="${idx}">Elegir</button>
-            </div>
-          </div>
-        `;
-      }).join('');
-
-      results.querySelectorAll('button[data-pick]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const idx = parseInt(btn.getAttribute('data-pick'), 10);
-
-          const qq2 = norm(q.value);
-          const emp2 = empresaFilter.value;
-          const limit2 = parseInt(limitSel.value, 10);
-
-          let arr2 = people.filter(p => !isDelivered(p.dni));
-          if(emp2) arr2 = arr2.filter(p => p.empresa === emp2);
-          if(qq2){
-            arr2 = arr2.filter(p => (`${p.dni} ${p.primer_nombre} ${p.primer_apellido} ${p.empresa} ${p.ruc}`.toLowerCase()).includes(qq2));
-          }
-          arr2 = arr2.slice(0, limit2);
-
-          setSelected(arr2[idx]);
-        });
-      });
-    }
-
-    function setSelected(p){
-      selected = p || null;
-      if(!selected){
-        selectedPill.style.display='none';
-        selectedHint.textContent = 'Selecciona una persona.';
-        item.value = "";
-        item.disabled = true;
-        btnSave.disabled = true;
-        return;
-      }
-      selectedPill.style.display='flex';
-      selectedHint.textContent = 'Completa el ítem y firma.';
-      selectedPill.innerHTML = `
-        <span class="chip">DNI</span> <b>${escapeHtml(selected.dni)}</b>
-        <span class="chip">NOMBRE</span> <b>${escapeHtml((selected.primer_nombre + " " + selected.primer_apellido).trim())}</b>
-        <span class="chip">EMPRESA</span> <b>${escapeHtml(selected.empresa)}</b>
-      `;
-      item.disabled = false;
-      btnSave.disabled = false;
-      item.focus();
-    }
-
-    function renderHistory(){
-      const rows = Object.values(deliveriesMap || {})
-        .filter(x => x && x.entregado)
-        .sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
-
-      hist.innerHTML = rows.map(d => {
-        const nombre = `${d.primer_nombre||""} ${d.primer_apellido||""}`.trim();
-        return `
-          <tr>
-            <td class="mono">${escapeHtml(formatLocal(d.timestamp))}</td>
-            <td class="mono">${escapeHtml(d.dni)}</td>
-            <td>${escapeHtml(nombre || "-")}</td>
-            <td>${escapeHtml(d.empresa || "-")}</td>
-            <td><b>${escapeHtml(d.item || "-")}</b></td>
-            <td style="white-space:nowrap">
-              <button class="btn danger" data-undo="${escapeHtml(d.dni)}">Revertir</button>
-            </td>
-          </tr>
-        `;
-      }).join('');
-
-      hist.querySelectorAll('button[data-undo]').forEach(b => {
-        b.addEventListener('click', async () => {
-          const dni = b.getAttribute('data-undo');
-          if(!confirm(`¿Volver a pendiente al DNI ${dni}?`)) return;
-          try{
-            await remove(ref(db, `Entregas/${dni}`));
-            showToast("Revertido a pendiente.");
-          }catch(e){
-            console.error(e);
-            showToast("Error al revertir.");
-          }
-        });
-      });
-    }
-
-    // --- Save / Mark delivered (fast + stable) ---
-    let saving = false;
-
-    btnSave.addEventListener('click', async () => {
-      if(saving) return;
-      if(!selected) return showToast("Selecciona una persona.");
-      if(!item.value.trim()) return showToast("Completa el ítem.");
-      if(isCanvasBlank()) return showToast("Falta la firma.");
-
-      saving = true;
-      btnSave.disabled = true;
-      const oldText = btnSave.textContent;
-      btnSave.textContent = "Guardando...";
-
-      try{
-        const dni = selected.dni;
-        const ts = new Date().toISOString();
-
-        // firma comprimida
-        const rawDataUrl = canvas.toDataURL("image/png");
-        const lightDataUrl = await compressSignatureDataUrl(rawDataUrl, 800, 0.75);
-
-        // subir a Storage (jpg)
-        const filePath = `firmas/${dni}/${ts.replaceAll(":","-")}.jpg`;
-        const fileRef = sRef(storage, filePath);
-        await uploadString(fileRef, lightDataUrl, "data_url");
-        const firmaUrl = await getDownloadURL(fileRef);
-
-        // guardar en RTDB (1 write)
-        const entrega = {
-          entregado: true,
-          dni,
-          primer_nombre: selected.primer_nombre,
-          primer_apellido: selected.primer_apellido,
-          empresa: selected.empresa,
-          ruc: selected.ruc,
-          item: item.value.trim(),
-          timestamp: ts,
-          firmaUrl
-        };
-
-        await set(ref(db, `Entregas/${dni}`), entrega);
-
-        // UI
-        item.value = "";
-        resetCanvas();
-        setSelected(null);
-        showToast("Entregado ✅");
-
-      }catch(e){
-        console.error(e);
-        const code = String(e?.code || "");
-        if(code.includes("storage/unauthorized")) showToast("Storage: PERMISSION_DENIED (revisa rules).");
-        else if(code.includes("storage/bucket-not-found")) showToast("Storage: bucket incorrecto (storageBucket).");
-        else showToast("Error guardando. Revisa consola.");
-      }finally{
-        btnSave.textContent = oldText;
-        btnSave.disabled = false;
-        saving = false;
-      }
-    });
-
-    // --- PDF Export (List with mini signatures from firmaUrl) ---
-    async function imageUrlToDataUrl(url){
-      const res = await fetch(url);
-      if(!res.ok) throw new Error("No se pudo descargar firma");
-      const blob = await res.blob();
-      return await new Promise((resolve) => {
-        const fr = new FileReader();
-        fr.onload = () => resolve(fr.result);
-        fr.readAsDataURL(blob);
-      });
-    }
-
-    async function exportPdfEntregados(){
-      const entregados = Object.values(deliveriesMap || {})
-        .filter(x => x && x.entregado)
-        .sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
-
-      if(!entregados.length){
-        showToast("No hay entregados aún.");
-        return;
-      }
-
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF({ unit:"mm", format:"a4" });
-
-      const pageW = doc.internal.pageSize.getWidth();
-      const pageH = doc.internal.pageSize.getHeight();
-      const margin = 12;
-
-      const col = {
-        fecha: margin,
-        dni: margin + 28,
-        nombre: margin + 56,
-        empresa: margin + 104,
-        item: margin + 150,
-        firma: pageW - margin - 30
-      };
-
-      const rowH = 16;
-      const sigW = 28;
-      const sigH = 12;
-
-      const title = "REPORTE DE ENTREGAS (CON FIRMAS)";
-      const today = new Date().toLocaleString();
-
-      let y = 14;
-
-      function drawHeader(){
-        doc.setFont("helvetica","bold");
-        doc.setFontSize(12);
-        doc.text(title, margin, y);
-
-        doc.setFont("helvetica","normal");
-        doc.setFontSize(9);
-        doc.setTextColor(90);
-        doc.text(`Generado: ${today} · Total: ${entregados.length}`, margin, y + 6);
-        doc.setTextColor(0);
-
-        doc.setFillColor(248,250,252);
-        doc.setDrawColor(210);
-        doc.roundedRect(margin, y + 10, pageW - margin*2, 10, 2, 2, "FD");
-
-        doc.setFont("helvetica","bold");
-        doc.setFontSize(9);
-        doc.text("Fecha", col.fecha, y + 17);
-        doc.text("DNI", col.dni, y + 17);
-        doc.text("Nombre", col.nombre, y + 17);
-        doc.text("Empresa", col.empresa, y + 17);
-        doc.text("Ítem", col.item, y + 17);
-        doc.text("Firma", col.firma, y + 17);
-
-        doc.setFont("helvetica","normal");
-        doc.setFontSize(9);
-      }
-
-      function newPage(){
-        doc.addPage();
-        y = 14;
-        drawHeader();
-        y = y + 24;
-      }
-
-      drawHeader();
-      y = y + 24;
-
-      const firmaCache = new Map();
-      showToast("Generando PDF... (puede demorar)", 3000);
-
-      for (let i=0; i<entregados.length; i++){
-        const d = entregados[i];
-
-        if (y + rowH > pageH - margin) newPage();
-
-        doc.setDrawColor(235);
-        doc.line(margin, y + rowH, pageW - margin, y + rowH);
-
-        const fechaTxt = formatLocal(d.timestamp);
-        const dniTxt = (d.dni || "").toString();
-        const nombreTxt = (`${d.primer_nombre||""} ${d.primer_apellido||""}`).trim();
-        const empresaTxt = (d.empresa || "-").toString();
-        const itemTxt = (d.item || "-").toString();
-
-        doc.setTextColor(30);
-        doc.text(doc.splitTextToSize(fechaTxt, 26), col.fecha, y + 6);
-        doc.text(doc.splitTextToSize(dniTxt, 24), col.dni, y + 6);
-        doc.text(doc.splitTextToSize(nombreTxt, 46), col.nombre, y + 6);
-        doc.text(doc.splitTextToSize(empresaTxt, 44), col.empresa, y + 6);
-        doc.text(doc.splitTextToSize(itemTxt, 38), col.item, y + 6);
-        doc.setTextColor(0);
-
-        const sigX = col.firma;
-        const sigY = y + 2;
-        doc.setDrawColor(210);
-        doc.roundedRect(sigX, sigY, sigW, sigH, 1.5, 1.5);
-
-        if (d.firmaUrl) {
-          try{
-            let dataUrl = firmaCache.get(d.firmaUrl);
-            if(!dataUrl){
-              dataUrl = await imageUrlToDataUrl(d.firmaUrl);
-              firmaCache.set(d.firmaUrl, dataUrl);
-            }
-            doc.addImage(dataUrl, "JPEG", sigX + 1, sigY + 1, sigW - 2, sigH - 2, undefined, "FAST");
-          }catch{
-            doc.setTextColor(120);
-            doc.setFontSize(7);
-            doc.text("Error", sigX + 2, sigY + 7);
-            doc.setFontSize(9);
-            doc.setTextColor(0);
-          }
-        } else {
-          doc.setTextColor(120);
-          doc.setFontSize(7);
-          doc.text("Sin firma", sigX + 2, sigY + 7);
-          doc.setFontSize(9);
-          doc.setTextColor(0);
+    <!doctype html>
+    <html lang="es">
+    <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Confirmación de Entrega (Firebase RTDB) + Excel</title>
+
+    <style>
+        :root{
+        --bg:#f6f7fb; --panel:#ffffff; --panel2:#fbfcff;
+        --border: rgba(15, 23, 42, .10);
+        --text:#0f172a; --muted:#64748b;
+        --accent:#2563eb; --accent2:#7c3aed;
+        --danger:#e11d48; --ok:#059669;
+        --shadow: 0 12px 30px rgba(15, 23, 42, .08);
+        --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+        }
+        *{box-sizing:border-box}
+        body{
+        margin:0; font-family:var(--sans); color:var(--text);
+        background:
+            radial-gradient(900px 520px at 20% 0%, rgba(124, 58, 237, .10), transparent 60%),
+            radial-gradient(900px 520px at 90% 10%, rgba(37, 99, 235, .10), transparent 55%),
+            linear-gradient(180deg, #ffffff 0%, var(--bg) 100%);
+        min-height:100vh;
+        }
+        .wrap{max-width:1100px; margin:0 auto; padding:18px;}
+        .top{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; padding:14px 14px 6px;}
+        .brand{display:flex; flex-direction:column; gap:4px;}
+        .brand h1{margin:0; font-size:16px; letter-spacing:.2px}
+        .brand p{margin:0; font-size:12px; color:var(--muted)}
+        .actions{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+
+        .btn{
+        border:1px solid var(--border);
+        background: var(--panel);
+        color: var(--text);
+        padding: 10px 12px;
+        border-radius: 14px;
+        cursor:pointer;
+        font-weight:650;
+        font-size:13px;
+        letter-spacing:.2px;
+        box-shadow: 0 6px 16px rgba(15,23,42,.06);
+        user-select:none;
+        }
+        .btn.primary{
+        border:none; color:#fff;
+        background: linear-gradient(90deg, rgba(37, 99, 235, .95), rgba(124, 58, 237, .95));
+        box-shadow: 0 10px 22px rgba(37, 99, 235, .18);
+        }
+        .btn.danger{
+        background: rgba(225, 29, 72, .08);
+        border-color: rgba(225, 29, 72, .22);
+        color: #be123c;
+        box-shadow:none;
+        }
+        .btn.ok{
+        background: rgba(5, 150, 105, .08);
+        border-color: rgba(5, 150, 105, .22);
+        color: #047857;
+        box-shadow:none;
+        }
+        .btn:disabled{opacity:.55; cursor:not-allowed}
+
+        input, select{
+        width:100%;
+        padding: 11px 12px;
+        border-radius: 14px;
+        border:1px solid var(--border);
+        background: var(--panel);
+        color: var(--text);
+        outline:none;
+        font-size:13px;
+        box-shadow: 0 6px 16px rgba(15,23,42,.04);
+        }
+        input::placeholder{color: rgba(100,116,139,.70)}
+
+        .grid{display:grid; grid-template-columns: 1fr 1.05fr; gap:14px; margin-top:10px;}
+        @media (max-width: 960px){ .grid{grid-template-columns:1fr} }
+
+        .card{background: var(--panel); border:1px solid var(--border); border-radius: 22px; box-shadow: var(--shadow); padding: 14px;}
+        .cardhead{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:10px;}
+        .cardhead h2{margin:0; font-size:13px; color: var(--text); letter-spacing:.2px}
+        .meta{font-size:12px; color:var(--muted); font-family:var(--mono)}
+        label{display:block; font-size:12px; color:var(--muted); margin: 10px 0 6px}
+
+        .results{margin-top:10px; border:1px solid var(--border); border-radius: 16px; overflow:hidden; background: var(--panel2);}
+        .list{max-height: 420px; overflow:auto}
+        .rowitem{
+        display:flex; align-items:center; justify-content:space-between; gap:10px;
+        padding: 10px 12px; border-top: 1px solid var(--border); background: var(--panel);
+        }
+        .rowitem:first-child{border-top:none}
+        .rowitem:hover{background: rgba(37,99,235,.04)}
+        .who{min-width:0}
+        .who strong{display:block; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+        .who span{display:block; font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px;}
+        .mono{font-family:var(--mono); font-size:12px; color:var(--muted); white-space:nowrap}
+
+        .pill{
+        display:flex; gap:8px; flex-wrap:wrap;
+        padding:10px 12px; border:1px solid var(--border); border-radius: 16px;
+        background: var(--panel2); margin-top:8px; align-items:center;
+        font-size:12px; color:var(--muted);
+        }
+        .chip{
+        padding:4px 8px; border-radius:999px; border:1px solid var(--border);
+        background: #fff; color:var(--muted); font-family:var(--mono); font-size:11px;
+        }
+        .pill b{color:var(--text)}
+
+        .toast{
+        margin-top:10px;
+        padding:10px 12px;
+        border:1px solid var(--border);
+        border-radius: 16px;
+        background: var(--panel2);
+        color: var(--muted);
+        font-size: 12px;
+        display:none;
+        white-space:pre-line;
         }
 
-        y += rowH;
-      }
+        table{
+        width:100%;
+        border-collapse: collapse;
+        border:1px solid var(--border);
+        border-radius:16px;
+        overflow:hidden;
+        margin-top:10px;
+        background: var(--panel);
+        }
+        th, td{
+        padding:10px;
+        border-top:1px solid var(--border);
+        font-size:12px;
+        text-align:left;
+        vertical-align:top;
+        }
+        th{background: var(--panel2); color:var(--muted); font-weight:650}
+        .tablewrap{max-height: 420px; overflow:auto; border-radius:16px}
+    </style>
+    </head>
 
-      doc.setFont("helvetica","normal");
-      doc.setFontSize(9);
-      doc.setTextColor(120);
-      doc.text("Fin del reporte.", margin, pageH - 10);
-      doc.setTextColor(0);
+    <body>
+    <div class="wrap">
+        <div class="top">
+        <div class="brand">
+            <h1>Confirmación de entrega</h1>
+            <p>Bono a empresas contratistas</p>
+        </div>
 
-      doc.save(`Reporte_Entregados_${new Date().toISOString().slice(0,10)}.pdf`);
-    }
+        <div class="actions">
+            <button class="btn ok" id="btnExportXlsx">Excel (.xlsx)</button>
+            <button class="btn danger" id="btnReload">Recargar</button>
+        </div>
+        </div>
 
-    btnExportPdfList.addEventListener("click", () => {
-      exportPdfEntregados().catch(err => {
-        console.error(err);
-        showToast("Error generando el PDF.");
-      });
-    });
+        <div class="grid">
+        <!-- Pendientes -->
+        <section class="card">
+            <div class="cardhead">
+            <h2>Pendientes</h2>
+            <div class="meta" id="peopleMeta">0</div>
+            </div>
 
-    // --- Listeners ---
-    q.addEventListener('input', searchPeople);
-    empresaFilter.addEventListener('change', searchPeople);
-    limitSel.addEventListener('change', searchPeople);
-    btnReload.addEventListener('click', () => location.reload());
+            <label>Buscar (DNI / nombre / apellido / empresa / RUC)</label>
+            <input id="q" placeholder="Ej: 7345... / Pérez / Empresa / 20..." />
 
-    // --- Subscribe to Firebase data ---
-    onValue(
-      ref(db, "Personal"),
-      (snap) => {
-        const val = snap.val() || {};
-        people = Object.entries(val).map(([dni, obj]) => normalizePerson(dni, obj));
-        refreshEmpresaFilter();
+            <div style="display:grid; grid-template-columns: 1fr 160px; gap:10px; margin-top:10px;">
+            <select id="empresaFilter">
+                <option value="">Todas las empresas</option>
+            </select>
+            <select id="limit">
+                <option value="15">15</option>
+                <option value="25" selected>25</option>
+                <option value="50">50</option>
+            </select>
+            </div>
+
+            <div class="results" style="margin-top:12px;">
+            <div class="list" id="results"></div>
+            </div>
+
+            <div class="toast" id="toast"></div>
+        </section>
+
+        <!-- Confirmar + Historial -->
+        <section class="card">
+            <div class="cardhead">
+            <h2>Confirmar entrega</h2>
+            <div class="meta" id="delMeta">0 entregas</div>
+            </div>
+
+            <div id="selectedPill" class="pill" style="display:none"></div>
+            <div class="hint" id="selectedHint" style="font-size:12px; color:var(--muted);">Selecciona una persona.</div>
+
+            <label style="margin-top:12px;">Ítem</label>
+            <input id="item" placeholder="Ej: Codigo de entrega" disabled />
+
+            <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="btn primary" id="btnConfirm" disabled>Confirmar Entrega</button>
+            <button class="btn" id="btnClearSel" disabled>Limpiar selección</button>
+            </div>
+
+            <div class="tablewrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>DNI</th>
+                    <th>Nombre</th>
+                    <th>Empresa</th>
+                    <th>RUC</th>
+                    <th>Ítem</th>
+                    <th>Acciones</th>
+                </tr>
+                </thead>
+                <tbody id="hist"></tbody>
+            </table>
+            </div>
+        </section>
+        </div>
+    </div>
+
+    <!-- SheetJS (XLSX) -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+        import { getDatabase, ref, onValue, set, remove } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
+
+        // --- TU CONFIG ---
+        const firebaseConfig = {
+        apiKey: "AIzaSyD_kLxpXSw_1V-BbaWxxYgfKwgqEGPAQ0k",
+        authDomain: "entrega-contratistas.firebaseapp.com",
+        databaseURL: "https://entrega-contratistas-default-rtdb.firebaseio.com",
+        projectId: "entrega-contratistas",
+        storageBucket: "entrega-contratistas.appspot.com",
+        messagingSenderId: "225687645195",
+        appId: "1:225687645195:web:6702c2c1c4b5378d2f2b0e"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // --- UI refs ---
+        const peopleMeta = document.getElementById('peopleMeta');
+        const delMeta = document.getElementById('delMeta');
+        const q = document.getElementById('q');
+        const empresaFilter = document.getElementById('empresaFilter');
+        const limitSel = document.getElementById('limit');
+        const results = document.getElementById('results');
+        const toast = document.getElementById('toast');
+
+        const selectedPill = document.getElementById('selectedPill');
+        const selectedHint = document.getElementById('selectedHint');
+        const item = document.getElementById('item');
+        const btnConfirm = document.getElementById('btnConfirm');
+        const btnClearSel = document.getElementById('btnClearSel');
+        const hist = document.getElementById('hist');
+
+        const btnReload = document.getElementById('btnReload');
+        const btnExportXlsx = document.getElementById('btnExportXlsx');
+
+        // --- Helpers ---
+        const norm = (s) => (s ?? "").toString().trim().toLowerCase();
+        function showToast(msg, ms=2600){
+        toast.textContent = msg;
+        toast.style.display = 'block';
+        clearTimeout(showToast._t);
+        showToast._t = setTimeout(() => toast.style.display = 'none', ms);
+        }
+        function escapeHtml(s){
+        return (s ?? "").toString()
+            .replaceAll("&","&amp;")
+            .replaceAll("<","&lt;")
+            .replaceAll(">","&gt;")
+            .replaceAll('"',"&quot;");
+        }
+        function formatLocal(iso){
+        const d = new Date(iso);
+        return d.toLocaleString();
+        }
+
+        // --- Data ---
+        let people = [];     // /Personal
+        let entregas = {};   // /Entregas
+        let selected = null;
+        let confirming = false;
+
+        function normalizePerson(dni, obj){
+        return {
+            dni: (dni ?? "").toString().trim(),
+            primer_nombre: (obj?.PRIMER_NOMBRE ?? obj?.primer_nombre ?? "").toString().trim(),
+            primer_apellido: (obj?.PRIMER_APELLIDO ?? obj?.primer_apellido ?? "").toString().trim(),
+            empresa: (obj?.EMPRESA ?? obj?.empresa ?? "").toString().trim(),
+            ruc: (obj?.RUC ?? obj?.ruc ?? "").toString().trim()
+        };
+        }
+
+        function refreshEmpresaFilter(){
+        const setEmp = new Set(people.map(p => p.empresa).filter(Boolean));
+        const arr = Array.from(setEmp).sort((a,b)=>a.localeCompare(b));
+        empresaFilter.innerHTML = `<option value="">Todas las empresas</option>` +
+            arr.map(e => `<option value="${escapeHtml(e)}">${escapeHtml(e)}</option>`).join('');
+        }
+
+        function isDelivered(dni){
+        return !!entregas?.[dni]?.entregado;
+        }
+
+        function refreshMeta(){
+        const pendientes = people.filter(p => !isDelivered(p.dni)).length;
+        peopleMeta.textContent = `${pendientes} pendientes`;
+        delMeta.textContent = `${Object.keys(entregas || {}).filter(d => entregas[d]?.entregado).length} entregas`;
+        }
+
+        function setSelected(p){
+        selected = p || null;
+        if(!selected){
+            selectedPill.style.display='none';
+            selectedHint.textContent = 'Selecciona una persona.';
+            item.value = "";
+            item.disabled = true;
+            btnConfirm.disabled = true;
+            btnClearSel.disabled = true;
+            return;
+        }
+        selectedPill.style.display='flex';
+        selectedHint.textContent = 'Agrega ítem y confirma.';
+        selectedPill.innerHTML = `
+            <span class="chip">DNI</span> <b>${escapeHtml(selected.dni)}</b>
+            <span class="chip">NOMBRE</span> <b>${escapeHtml((selected.primer_nombre + " " + selected.primer_apellido).trim())}</b>
+            <span class="chip">EMPRESA</span> <b>${escapeHtml(selected.empresa)}</b>
+        `;
+        item.disabled = false;
+        btnConfirm.disabled = false;
+        btnClearSel.disabled = false;
+        item.focus();
+        }
+
+        function searchPeople(){
+        const qq = norm(q.value);
+        const emp = empresaFilter.value;
+        const limit = parseInt(limitSel.value, 10);
+
+        let arr = people.filter(p => !isDelivered(p.dni)); // solo pendientes
+        if(emp) arr = arr.filter(p => p.empresa === emp);
+
+        if(qq){
+            arr = arr.filter(p => {
+            const hay = `${p.dni} ${p.primer_nombre} ${p.primer_apellido} ${p.empresa} ${p.ruc}`.toLowerCase();
+            return hay.includes(qq);
+            });
+        }
+
+        arr = arr.slice(0, limit);
+
+        results.innerHTML = arr.map((p, idx) => {
+            const full = `${p.primer_nombre} ${p.primer_apellido}`.trim();
+            return `
+            <div class="rowitem">
+                <div class="who">
+                <strong>${escapeHtml(full || "(sin nombre)")}</strong>
+                <span>${escapeHtml(p.empresa || "(sin empresa)")} · RUC ${escapeHtml(p.ruc || "-")}</span>
+                </div>
+                <div style="display:flex; gap:10px; align-items:center">
+                <span class="mono">${escapeHtml(p.dni)}</span>
+                <button class="btn ok" data-pick="${idx}">Elegir</button>
+                </div>
+            </div>
+            `;
+        }).join('');
+
+        results.querySelectorAll('button[data-pick]').forEach(btn => {
+            btn.addEventListener('click', () => {
+            const idx = parseInt(btn.getAttribute('data-pick'), 10);
+
+            // reconstruye lista visible para seleccionar bien
+            const qq2 = norm(q.value);
+            const emp2 = empresaFilter.value;
+            const limit2 = parseInt(limitSel.value, 10);
+
+            let arr2 = people.filter(p => !isDelivered(p.dni));
+            if(emp2) arr2 = arr2.filter(p => p.empresa === emp2);
+            if(qq2){
+                arr2 = arr2.filter(p => (`${p.dni} ${p.primer_nombre} ${p.primer_apellido} ${p.empresa} ${p.ruc}`.toLowerCase()).includes(qq2));
+            }
+            arr2 = arr2.slice(0, limit2);
+
+            setSelected(arr2[idx]);
+            });
+        });
+
         refreshMeta();
-        searchPeople();
-      },
-      (err) => {
-        console.error("Error leyendo Personal:", err);
-        showToast("Error leyendo Personal: " + (err?.code || ""));
-      }
-    );
+        }
 
-    onValue(
-      ref(db, "Entregas"),
-      (snap) => {
-        deliveriesMap = snap.val() || {};
+        function renderHistory(){
+        const mapPeople = new Map(people.map(p => [p.dni, p]));
+        const rows = Object.entries(entregas || {})
+            .filter(([dni, e]) => e && e.entregado)
+            .map(([dni, e]) => ({ dni, ...e }))
+            .sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+        hist.innerHTML = rows.map(e => {
+            const p = mapPeople.get(e.dni);
+            const nombre = p ? `${p.primer_nombre} ${p.primer_apellido}`.trim() : "-";
+            const emp = p ? p.empresa : "-";
+            const ruc = p ? p.ruc : "-";
+            return `
+            <tr>
+                <td class="mono">${escapeHtml(formatLocal(e.timestamp))}</td>
+                <td class="mono">${escapeHtml(e.dni)}</td>
+                <td>${escapeHtml(nombre)}</td>
+                <td>${escapeHtml(emp)}</td>
+                <td class="mono">${escapeHtml(ruc)}</td>
+                <td><b>${escapeHtml(e.item || "-")}</b></td>
+                <td style="white-space:nowrap">
+                <button class="btn danger" data-undo="${escapeHtml(e.dni)}">Revertir</button>
+                </td>
+            </tr>
+            `;
+        }).join('');
+
+        hist.querySelectorAll('button[data-undo]').forEach(b => {
+            b.addEventListener('click', async () => {
+            const dni = b.getAttribute('data-undo');
+            if(!confirm(`¿Volver a pendiente al DNI ${dni}?`)) return;
+            try{
+                await remove(ref(db, `Entregas/${dni}`));
+                showToast("Revertido a pendiente.");
+            }catch(err){
+                console.error(err);
+                showToast("Error al revertir.");
+            }
+            });
+        });
+
         refreshMeta();
-        searchPeople();
-        renderHistory();
-      },
-      (err) => {
-        console.error("Error leyendo Entregas:", err);
-        showToast("Error leyendo Entregas: " + (err?.code || ""));
-      }
-    );
-  </script>
-</body>
-</html>
+        }
+
+        // --- Confirm delivery (RTDB) ---
+        btnConfirm.addEventListener('click', async () => {
+        if(confirming) return;
+        if(!selected) return showToast("Selecciona una persona.");
+        confirming = true;
+        btnConfirm.disabled = true;
+        const old = btnConfirm.textContent;
+        btnConfirm.textContent = "Confirmando...";
+
+        try{
+            const dni = selected.dni;
+            const ts = new Date().toISOString();
+
+            await set(ref(db, `Entregas/${dni}`), {
+            entregado: true,
+            timestamp: ts,
+            item: item.value.trim() || ""
+            });
+
+            item.value = "";
+            setSelected(null);
+            showToast("Entrega confirmada ✅");
+
+        }catch(err){
+            console.error(err);
+            showToast("Error confirmando (revisa rules).");
+        }finally{
+            btnConfirm.textContent = old;
+            btnConfirm.disabled = false;
+            confirming = false;
+        }
+        });
+
+        btnClearSel.addEventListener('click', () => setSelected(null));
+
+        // --- Export Excel (.xlsx): 2 sheets (Entregados + Pendientes) ---
+        function exportXlsx(){
+        const mapPeople = new Map(people.map(p => [p.dni, p]));
+
+        const entregados = Object.entries(entregas || {})
+            .filter(([dni, e]) => e && e.entregado)
+            .map(([dni, e]) => {
+            const p = mapPeople.get(dni);
+            return {
+                DNI: dni,
+                "Primer nombre": p?.primer_nombre ?? "",
+                "Primer apellido": p?.primer_apellido ?? "",
+                Empresa: p?.empresa ?? "",
+                RUC: p?.ruc ?? "",
+                "Ítem": e.item || "",
+                "Fecha ISO": e.timestamp || "",
+                "Fecha local": e.timestamp ? formatLocal(e.timestamp) : ""
+            };
+            })
+            .sort((a,b)=> (a["Fecha ISO"]||"").localeCompare(b["Fecha ISO"]||""));
+
+        const pendientes = people
+            .filter(p => !isDelivered(p.dni))
+            .map(p => ({
+            DNI: p.dni,
+            "Primer nombre": p.primer_nombre,
+            "Primer apellido": p.primer_apellido,
+            Empresa: p.empresa,
+            RUC: p.ruc
+            }))
+            .sort((a,b)=> (a.Empresa||"").localeCompare(b.Empresa||"") || (a.DNI||"").localeCompare(b.DNI||""));
+
+        if(!entregados.length && !pendientes.length){
+            showToast("No hay datos para exportar.");
+            return;
+        }
+
+        const wb = XLSX.utils.book_new();
+
+        const ws1 = XLSX.utils.json_to_sheet(entregados);
+        XLSX.utils.book_append_sheet(wb, ws1, "Entregados");
+
+        const ws2 = XLSX.utils.json_to_sheet(pendientes);
+        XLSX.utils.book_append_sheet(wb, ws2, "Pendientes");
+
+        const date = new Date().toISOString().slice(0,10);
+        XLSX.writeFile(wb, `Entrega_${date}.xlsx`);
+        }
+
+        btnExportXlsx.addEventListener('click', exportXlsx);
+
+        // --- Listeners ---
+        q.addEventListener('input', searchPeople);
+        empresaFilter.addEventListener('change', searchPeople);
+        limitSel.addEventListener('change', searchPeople);
+        btnReload.addEventListener('click', () => location.reload());
+
+        // --- Subscribe ---
+        onValue(
+        ref(db, "Personal"),
+        (snap) => {
+            const val = snap.val() || {};
+            people = Object.entries(val).map(([dni, obj]) => normalizePerson(dni, obj));
+            refreshEmpresaFilter();
+            refreshMeta();
+            searchPeople();
+            renderHistory();
+        },
+        (err) => {
+            console.error("Error leyendo Personal:", err);
+            showToast("Error leyendo Personal: " + (err?.code || ""));
+        }
+        );
+
+        onValue(
+        ref(db, "Entregas"),
+        (snap) => {
+            entregas = snap.val() || {};
+            refreshMeta();
+            searchPeople();
+            renderHistory();
+        },
+        (err) => {
+            console.error("Error leyendo Entregas:", err);
+            showToast("Error leyendo Entregas: " + (err?.code || ""));
+        }
+        );
+    </script>
+    </body>
+    </html>
