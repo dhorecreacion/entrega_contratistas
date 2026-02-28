@@ -174,6 +174,7 @@
 
         <div class="actions">
             <button class="btn danger" id="btnReload">Recargar</button>
+            <button class="btn ok" id="btnExportPdfList">Entregados (PDF)</button>
         </div>
         </div>
 
@@ -585,6 +586,189 @@
         searchPeople();     // vuelve a filtrar pendientes
         renderHistory();    // actualiza historial
         });
+
+        const btnExportPdfList = document.getElementById("btnExportPdfList");
+
+    function loadImageFromUrl(url){
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = "anonymous"; // importante si la URL lo permite
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = url;
+    });
+    }
+
+    // Convierte una imagen (URL) a dataURL para meterla en jsPDF
+    async function imageUrlToDataUrl(url){
+    // fetch + blob -> dataURL (funciona bien con Firebase Storage URLs)
+    const res = await fetch(url);
+    if(!res.ok) throw new Error("No se pudo descargar la firma");
+    const blob = await res.blob();
+    return await new Promise((resolve) => {
+        const fr = new FileReader();
+        fr.onload = () => resolve(fr.result);
+        fr.readAsDataURL(blob);
+    });
+    }
+
+    async function exportPdfEntregados(){
+    // entregados
+    const entregados = Object.values(deliveriesMap || {})
+        .filter(x => x && x.entregado)
+        .sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+    if(!entregados.length){
+        showToast("No hay entregados aún.");
+        return;
+    }
+
+    // jsPDF dinámico importado fuera (CDN)
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit:"mm", format:"a4" });
+
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const margin = 12;
+
+    // columnas (ajusta si quieres)
+    const col = {
+        fecha: margin,
+        dni: margin + 28,
+        nombre: margin + 56,
+        empresa: margin + 104,
+        item: margin + 150,
+        firma: pageW - margin - 30
+    };
+
+    const rowH = 16;
+    const sigW = 28;
+    const sigH = 12;
+
+    const title = "REPORTE DE ENTREGAS";
+    const today = new Date().toLocaleString();
+
+    let y = 14;
+
+    function drawHeader(){
+        doc.setFont("helvetica","bold");
+        doc.setFontSize(12);
+        doc.text(title, margin, y);
+
+        doc.setFont("helvetica","normal");
+        doc.setFontSize(9);
+        doc.setTextColor(90);
+        doc.text(`Generado: ${today} · Total: ${entregados.length}`, margin, y + 6);
+        doc.setTextColor(0);
+
+        doc.setFillColor(248,250,252);
+        doc.setDrawColor(210);
+        doc.roundedRect(margin, y + 10, pageW - margin*2, 10, 2, 2, "FD");
+
+        doc.setFont("helvetica","bold");
+        doc.setFontSize(9);
+        doc.text("Fecha", col.fecha, y + 17);
+        doc.text("DNI", col.dni, y + 17);
+        doc.text("Nombre", col.nombre, y + 17);
+        doc.text("Empresa", col.empresa, y + 17);
+        doc.text("Ítem", col.item, y + 17);
+        doc.text("Firma", col.firma, y + 17);
+
+        doc.setFont("helvetica","normal");
+        doc.setFontSize(9);
+    }
+
+    function newPage(){
+        doc.addPage();
+        y = 14;
+        drawHeader();
+        y = y + 24;
+    }
+
+    drawHeader();
+    y = y + 24;
+
+    // cache de firmas para no bajarlas 2 veces
+    const firmaCache = new Map();
+
+    // Para no romper si hay muchísimas, avisamos
+    showToast("Generando PDF... puede demorar si hay muchas firmas", 3000);
+
+    for (let i=0; i<entregados.length; i++){
+        const d = entregados[i];
+
+        if (y + rowH > pageH - margin){
+        newPage();
+        }
+
+        // separador
+        doc.setDrawColor(235);
+        doc.line(margin, y + rowH, pageW - margin, y + rowH);
+
+        const fechaTxt = formatLocal(d.timestamp);
+        const dniTxt = (d.dni || "").toString();
+        const nombreTxt = (`${d.primer_nombre||""} ${d.primer_apellido||""}`).trim();
+        const empresaTxt = (d.empresa || "-").toString();
+        const itemTxt = (d.item || "-").toString();
+
+        doc.setTextColor(30);
+        doc.text(doc.splitTextToSize(fechaTxt, 26), col.fecha, y + 6);
+        doc.text(doc.splitTextToSize(dniTxt, 24), col.dni, y + 6);
+        doc.text(doc.splitTextToSize(nombreTxt, 46), col.nombre, y + 6);
+        doc.text(doc.splitTextToSize(empresaTxt, 44), col.empresa, y + 6);
+        doc.text(doc.splitTextToSize(itemTxt, 38), col.item, y + 6);
+        doc.setTextColor(0);
+
+        // caja firma
+        const sigX = col.firma;
+        const sigY = y + 2;
+        doc.setDrawColor(210);
+        doc.roundedRect(sigX, sigY, sigW, sigH, 1.5, 1.5);
+
+        // insertar firma desde firmaUrl
+        if (d.firmaUrl) {
+        try{
+            let dataUrl = firmaCache.get(d.firmaUrl);
+            if(!dataUrl){
+            dataUrl = await imageUrlToDataUrl(d.firmaUrl);
+            firmaCache.set(d.firmaUrl, dataUrl);
+            }
+            doc.addImage(dataUrl, "PNG", sigX + 1, sigY + 1, sigW - 2, sigH - 2, undefined, "FAST");
+        }catch(e){
+            // si falla una firma, no rompemos el PDF
+            doc.setTextColor(120);
+            doc.setFontSize(7);
+            doc.text("Error", sigX + 2, sigY + 7);
+            doc.setFontSize(9);
+            doc.setTextColor(0);
+        }
+        } else {
+        doc.setTextColor(120);
+        doc.setFontSize(7);
+        doc.text("Sin firma", sigX + 2, sigY + 7);
+        doc.setFontSize(9);
+        doc.setTextColor(0);
+        }
+
+        y += rowH;
+    }
+
+    doc.setFont("helvetica","normal");
+    doc.setFontSize(9);
+    doc.setTextColor(120);
+    doc.text("Fin del reporte.", margin, pageH - 10);
+    doc.setTextColor(0);
+
+    doc.save(`Reporte_Entregados_${new Date().toISOString().slice(0,10)}.pdf`);
+    }
+
+
+    btnExportPdfList.addEventListener("click", () => {
+    exportPdfEntregados().catch(err => {
+        console.error(err);
+        showToast("Error generando el PDF.");
+    });
+    });
 
     </script>
     </body>
